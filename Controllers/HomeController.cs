@@ -25,7 +25,7 @@ namespace WebApplication.Controllers
 
         public IActionResult Show(PersonViewModel model)
         {
-            return Content(model.ToString());
+            return View(model);
         }
 
         public IActionResult About()
