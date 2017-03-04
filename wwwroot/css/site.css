@@ -42,3 +42,11 @@ textarea {
     display: none
   }
 }
+
+span.field-validation-error span {
+    display: inline-block;
+    color: red;
+    font-weight: bold;
+    border: 3px red solid;
+    background-color: black;
+}

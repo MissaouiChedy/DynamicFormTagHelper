@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DynamicFormTagHelper.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApplication.Controllers
@@ -10,7 +11,21 @@ namespace WebApplication.Controllers
     {
         public IActionResult Index()
         {
-            return View();
+            return View(new PersonViewModel());
+        }
+        [HttpPost]
+        public IActionResult Index(PersonViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                return RedirectToAction("Show", "Home", model);
+            }
+            return View(model);
+        }
+
+        public IActionResult Show(PersonViewModel model)
+        {
+            return Content(model.ToString());
         }
 
         public IActionResult About()
