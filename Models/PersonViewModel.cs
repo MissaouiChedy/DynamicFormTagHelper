@@ -14,7 +14,7 @@ namespace DynamicFormTagHelper.Models
         public string Name { get; set; }
 
         [DataType(DataType.Date)]
-        [Display(Name = "Birth date", Prompt = "YYYY-MM-DD", Description = "YYYY-MM-DD")]
+        [Display(Name = "Birth date")]
         public DateTime? BirthDate { get; set; }
 
         [Display(Name = "BasketBall Player?")]
@@ -22,13 +22,5 @@ namespace DynamicFormTagHelper.Models
 
         public string IsBasketBallPlayerVM => IsBasketBallPlayer ? "Yes" : "No";
 
-        public override string ToString()
-        {
-            return $@" Id: {Id}
-Name: {Name}
-BirthDate: {BirthDate.ToString()}
-BasketBall Player?: {IsBasketBallPlayerVM}
-";
-        }
     }
 }

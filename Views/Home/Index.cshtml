@@ -7,6 +7,7 @@
         <dynamic-form asp-action="/Home/Index" asp-model="@Model"></dynamic-form>
     </div>
 </div>
+@*Includes in the Scripts section under Shared/_Layout.cshtml the Jquery validation scripts*@
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }

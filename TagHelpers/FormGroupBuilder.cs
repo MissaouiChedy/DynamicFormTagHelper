@@ -26,18 +26,17 @@ namespace DynamicFormTagHelper.TagHelpers
 
         private static async Task<string> buildLabelHtml(IHtmlGenerator generator, ModelExplorer property, ViewContext viewContext)
         {
-            Func<TagHelper> builder = () => new LabelTagHelper(generator)
+            TagHelper label = new LabelTagHelper(generator)
             {
                 For = new ModelExpression(property.Metadata.PropertyName, property),
                 ViewContext = viewContext
             };
-            return await GetGeneratedContent("label", TagMode.StartTagAndEndTag, builder);
-
+            return await GetGeneratedContent("label", TagMode.StartTagAndEndTag, label);
         }
 
         private static async Task<string> buildInputHtml(IHtmlGenerator generator, ModelExplorer property, ViewContext viewContext)
         {
-            Func<TagHelper> builder = () => new InputTagHelper(generator)
+            TagHelper input = new InputTagHelper(generator)
             {
                 For = new ModelExpression(property.Metadata.PropertyName, property),
                 ViewContext = viewContext
@@ -45,25 +44,24 @@ namespace DynamicFormTagHelper.TagHelpers
 
             return await GetGeneratedContent("input",
                 TagMode.SelfClosing,
-                builder,
+                input,
                 attributes: new TagHelperAttributeList { new TagHelperAttribute("class", "form-control") }
                 );
         }
 
         private static async Task<string> buildValidationMessage(IHtmlGenerator generator, ModelExplorer property, ViewContext viewContext)
         {
-            Func<TagHelper> builder = () => new ValidationMessageTagHelper(generator)
+            TagHelper validationMessage = new ValidationMessageTagHelper(generator)
             {
                 For = new ModelExpression(property.Metadata.PropertyName, property),
                 ViewContext = viewContext
             };
-            return await GetGeneratedContent("span", TagMode.StartTagAndEndTag, builder);
+            return await GetGeneratedContent("span", TagMode.StartTagAndEndTag, validationMessage);
         }
 
         private static async Task<string> GetGeneratedContent(string tagName, TagMode tagMode,
-            Func<TagHelper> tagHelperBuilder, TagHelperAttributeList attributes = null)
+            ITagHelper tagHelper, TagHelperAttributeList attributes = null)
         {
-            TagHelper tagHelper = tagHelperBuilder();
             if (attributes == null)
             {
                 attributes = new TagHelperAttributeList();
