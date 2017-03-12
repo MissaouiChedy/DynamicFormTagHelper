@@ -6,17 +6,19 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.TagHelpers;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Razor.TagHelpers;
+using System.IO;
+using System.Text.Encodings.Web;
 
 namespace DynamicFormTagHelper.TagHelpers
 {
     public static class FormGroupBuilder
     {
-        public static async Task<string> GetFormGroup(IHtmlGenerator generator, ModelExplorer property, ViewContext viewContext)
+        public static async Task<string> GetFormGroup(IHtmlGenerator generator, ModelExplorer property, ViewContext viewContext, HtmlEncoder encoder)
         {
 
-            string label = await buildLabelHtml(generator, property, viewContext);
-            string input = await buildInputHtml(generator, property, viewContext);
-            string validation = await buildValidationMessage(generator, property, viewContext);
+            string label = await buildLabelHtml(generator, property, viewContext, encoder);
+            string input = await buildInputHtml(generator, property, viewContext, encoder);
+            string validation = await buildValidationMessage(generator, property, viewContext, encoder);
             return $@"<div class='form-group'>
                 {label}
                 {input}
@@ -24,17 +26,17 @@ namespace DynamicFormTagHelper.TagHelpers
 </div>";
         }
 
-        private static async Task<string> buildLabelHtml(IHtmlGenerator generator, ModelExplorer property, ViewContext viewContext)
+        private static async Task<string> buildLabelHtml(IHtmlGenerator generator, ModelExplorer property, ViewContext viewContext, HtmlEncoder encoder)
         {
             TagHelper label = new LabelTagHelper(generator)
             {
                 For = new ModelExpression(property.Metadata.PropertyName, property),
                 ViewContext = viewContext
             };
-            return await GetGeneratedContent("label", TagMode.StartTagAndEndTag, label);
+            return await GetGeneratedContent("label", TagMode.StartTagAndEndTag, label, encoder: encoder);
         }
 
-        private static async Task<string> buildInputHtml(IHtmlGenerator generator, ModelExplorer property, ViewContext viewContext)
+        private static async Task<string> buildInputHtml(IHtmlGenerator generator, ModelExplorer property, ViewContext viewContext, HtmlEncoder encoder)
         {
             TagHelper input = new InputTagHelper(generator)
             {
@@ -45,22 +47,24 @@ namespace DynamicFormTagHelper.TagHelpers
             return await GetGeneratedContent("input",
                 TagMode.SelfClosing,
                 input,
-                attributes: new TagHelperAttributeList { new TagHelperAttribute("class", "form-control") }
+                attributes: new TagHelperAttributeList { new TagHelperAttribute("class", "form-control")
+                },
+                encoder: encoder
                 );
         }
 
-        private static async Task<string> buildValidationMessage(IHtmlGenerator generator, ModelExplorer property, ViewContext viewContext)
+        private static async Task<string> buildValidationMessage(IHtmlGenerator generator, ModelExplorer property, ViewContext viewContext, HtmlEncoder encoder)
         {
             TagHelper validationMessage = new ValidationMessageTagHelper(generator)
             {
                 For = new ModelExpression(property.Metadata.PropertyName, property),
                 ViewContext = viewContext
             };
-            return await GetGeneratedContent("span", TagMode.StartTagAndEndTag, validationMessage);
+            return await GetGeneratedContent("span", TagMode.StartTagAndEndTag, validationMessage, encoder: encoder);
         }
 
         private static async Task<string> GetGeneratedContent(string tagName, TagMode tagMode,
-            ITagHelper tagHelper, TagHelperAttributeList attributes = null)
+            ITagHelper tagHelper, HtmlEncoder encoder, TagHelperAttributeList attributes = null )
         {
             if (attributes == null)
             {
@@ -77,39 +81,17 @@ namespace DynamicFormTagHelper.TagHelpers
             TagHelperContext context = new TagHelperContext(attributes, new Dictionary<object, object>(), Guid.NewGuid().ToString());
 
             await tagHelper.ProcessAsync(context, output);
-            return output.renderTag();
+
+            return output.RenderTag(encoder);
         }
 
-        private static string renderTag(this TagHelperOutput output)
+        private static string RenderTag(this TagHelperOutput output, HtmlEncoder encoder)
         {
-            switch (output.TagMode)
+            using (var writer = new StringWriter())
             {
-                case TagMode.StartTagAndEndTag:
-                    return $"<{output.TagName} {output.Attributes.renderAttributes()}>{output.Content.GetContent()}</{output.TagName}>";
-                case TagMode.SelfClosing:
-                    if (output.TagName != null)
-                    {
-                        return $"<{output.TagName} {output.Attributes.renderAttributes()}/>";
-                    }
-                    else
-                    {
-                        return output.Content.GetContent();
-                    }
-                case TagMode.StartTagOnly:
-                    return $"<{output.TagName} {output.Attributes.renderAttributes()}>";
-                default:
-                    throw new Exception("UNKOWN TAG MODE");
+                output.WriteTo(writer, encoder);
+                return writer.ToString();
             }
-        }
-
-        private static string renderAttributes(this TagHelperAttributeList attributes)
-        {
-            StringBuilder builder = new StringBuilder();
-            foreach (var attr in attributes)
-            {
-                builder.Append($"{attr.Name}=\"{attr.Value}\" ");
-            }
-            return builder.ToString();
         }
     }
 }

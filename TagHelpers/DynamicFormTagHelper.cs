@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Razor.TagHelpers;
+using Microsoft.AspNetCore.Mvc.Razor.Internal;
+using System.Text.Encodings.Web;
 
 namespace DynamicFormTagHelper.TagHelpers
 {
@@ -17,11 +19,14 @@ namespace DynamicFormTagHelper.TagHelpers
         [ViewContext]
         public ViewContext ViewContext { get; set; }
 
+        private HtmlEncoder _encoder { get; set; }
+
         private IHtmlGenerator _htmlGenerator;
 
-        public DynamicFormTagHelper(IHtmlGenerator htmlGenerator)
+        public DynamicFormTagHelper(IHtmlGenerator htmlGenerator, HtmlEncoder encoder)
         {
             _htmlGenerator = htmlGenerator;
+            _encoder = encoder;
         }
 
         public override async Task ProcessAsync(TagHelperContext context, TagHelperOutput output)
@@ -31,7 +36,7 @@ namespace DynamicFormTagHelper.TagHelpers
             {
                 if (prop.Metadata.PropertySetter != null)
                 {
-                    builder.Append(await FormGroupBuilder.GetFormGroup(_htmlGenerator, prop, ViewContext));
+                    builder.Append(await FormGroupBuilder.GetFormGroup(_htmlGenerator, prop, ViewContext, _encoder));
                 }
             }
             builder.Append(@"<div class='form-group'>
