@@ -15,7 +15,7 @@ namespace DynamicFormTagHelper.TagHelpers
     {
         public static Task<string> GetFormGroup(ModelExplorer property, IHtmlGenerator generator, ViewContext viewContext, HtmlEncoder encoder)
         {
-            if (IsSimpleType(property.ModelType))
+            if (property.ModelType.IsSimpleType())
             {
                 return _getFormGroupForSimpleProperty(property, generator, viewContext, encoder);
             }
@@ -44,7 +44,7 @@ namespace DynamicFormTagHelper.TagHelpers
             string label = await buildLabelHtml(generator, property, viewContext, encoder);
             foreach (var prop in property.Properties)
             {
-                builder.Append(await _getFormGroupForSimpleProperty(prop, generator, viewContext, encoder));
+                builder.Append(await GetFormGroup(prop, generator, viewContext, encoder));
             }
 
             return $@"<div class='form-group'>
@@ -53,24 +53,6 @@ namespace DynamicFormTagHelper.TagHelpers
                         {builder.ToString()}
                     </div>
 </div>";
-        }
-        
-        private static bool IsSimpleType(Type propertyType)
-        {
-            Type[] simpleTypes = new Type[]
-            {
-                typeof(string), typeof(bool), typeof(byte), typeof(char), typeof(DateTime), typeof(DateTimeOffset),
-                typeof(decimal), typeof(double), typeof(Guid), typeof(short), typeof(int), typeof(long), typeof(float),
-                typeof(TimeSpan), typeof(ushort), typeof(uint),typeof(ulong)
-            };
-            if (propertyType.IsConstructedGenericType && propertyType.Name.Equals("Nullable`1"))
-            {
-                return IsSimpleType(propertyType.GenericTypeArguments.First());
-            }
-            else
-            {
-                return (!propertyType.IsArray && !propertyType.IsPointer && simpleTypes.Contains(propertyType));
-            }
         }
 
         private static async Task<string> buildLabelHtml(IHtmlGenerator generator, ModelExplorer property, ViewContext viewContext, HtmlEncoder encoder)
@@ -144,6 +126,24 @@ namespace DynamicFormTagHelper.TagHelpers
             return output.RenderTag(encoder);
         }
 
+        #region Utility_Extension_Methods
+        private static bool IsSimpleType(this Type propertyType)
+        {
+            Type[] simpleTypes = new Type[]
+            {
+                typeof(string), typeof(bool), typeof(byte), typeof(char), typeof(DateTime), typeof(DateTimeOffset),
+                typeof(decimal), typeof(double), typeof(Guid), typeof(short), typeof(int), typeof(long), typeof(float),
+                typeof(TimeSpan), typeof(ushort), typeof(uint),typeof(ulong)
+            };
+            if (propertyType.IsConstructedGenericType && propertyType.Name.Equals("Nullable`1"))
+            {
+                return IsSimpleType(propertyType.GenericTypeArguments.First());
+            }
+            else
+            {
+                return (!propertyType.IsArray && !propertyType.IsPointer && simpleTypes.Contains(propertyType));
+            }
+        }
         private static string RenderTag(this TagHelperOutput output, HtmlEncoder encoder)
         {
             using (var writer = new StringWriter())
@@ -152,5 +152,6 @@ namespace DynamicFormTagHelper.TagHelpers
                 return writer.ToString();
             }
         }
+        #endregion
     }
 }

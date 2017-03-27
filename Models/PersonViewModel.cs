@@ -21,12 +21,12 @@ namespace DynamicFormTagHelper.Models
         public bool IsBasketBallPlayer { get; set; } = false;
 
         [Display(Name="Person's Dog")]
-        public Dog OwnedDog { get; set; } 
+        public DogViewModel OwnedDog { get; set; } 
 
         public string IsBasketBallPlayerVM => IsBasketBallPlayer ? "Yes" : "No";
     }
 
-    public class Dog
+    public class DogViewModel
     {
         [Display(Name="Dog's Id")]
         public int Id { get; set; }
