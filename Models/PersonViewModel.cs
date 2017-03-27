@@ -34,5 +34,12 @@ namespace DynamicFormTagHelper.Models
         [Required]
         [Display(Name = "Dog's Name")]
         public string Name { get; set; }
+
+        public Leash DogLeash { get; set; }
+    }
+
+    public class Leash
+    {
+        public string Name { get; set; }
     }
 }
