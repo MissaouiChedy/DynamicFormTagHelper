@@ -50,3 +50,7 @@ span.field-validation-error span {
     border: 3px red solid;
     background-color: black;
 }
+
+.sub-form-group {
+    padding-left: 1em;
+}

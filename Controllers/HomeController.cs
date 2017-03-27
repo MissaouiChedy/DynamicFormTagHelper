@@ -13,19 +13,20 @@ namespace WebApplication.Controllers
         {
             return View(new PersonViewModel());
         }
+
         [HttpPost]
         public IActionResult Index(PersonViewModel model)
         {
             if (ModelState.IsValid)
             {
-                return RedirectToAction("Show", "Home", model);
+                return Show(model);
             }
             return View(model);
         }
 
         public IActionResult Show(PersonViewModel model)
         {
-            return View(model);
+            return View("Show", model);
         }
 
         public IActionResult About()

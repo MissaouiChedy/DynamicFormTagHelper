@@ -1,8 +1,11 @@
 ﻿@model DynamicFormTagHelper.Models.PersonViewModel
-
+@{
+    ViewData["Title"] = "Show";
+}
 <div>
-    <p><b>>Id:</b> @Model.Id</p>
+    <p><b>Id:</b> @Model.Id</p>
     <p><b>Name:</b> @Model.Name</p>
     <p><b>Birth:</b> @Model.BirthDate</p>
     <p><b>BasketBall?:</b> @Model.IsBasketBallPlayerVM</p>
+    <p><b>Dog: </b> @(Model.OwnedDog.Id) &gt; @(Model.OwnedDog.Name)</p>
 </div>

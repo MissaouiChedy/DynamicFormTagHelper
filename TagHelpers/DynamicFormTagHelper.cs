@@ -36,7 +36,7 @@ namespace DynamicFormTagHelper.TagHelpers
             {
                 if (prop.Metadata.PropertySetter != null)
                 {
-                    builder.Append(await FormGroupBuilder.GetFormGroup(_htmlGenerator, prop, ViewContext, _encoder));
+                    builder.Append(await FormGroupBuilder.GetFormGroup(prop, _htmlGenerator, ViewContext, _encoder));
                 }
             }
             builder.Append(@"<div class='form-group'>
@@ -47,7 +47,6 @@ namespace DynamicFormTagHelper.TagHelpers
             output.Attributes.Add(new TagHelperAttribute("method", "post"));
             output.Attributes.Add(new TagHelperAttribute("action", TargetAction));
             output.Content.SetHtmlContent(builder.ToString());
-
         }
     }
 }
