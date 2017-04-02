@@ -3,8 +3,18 @@
     ViewData["Title"] = "Home Page";
 }
 <div class="row" style="margin-top: 2em;">
-    <div class="col-md-5">
-        <dynamic-form asp-action="/Home/Index" asp-model="@Model"></dynamic-form>
+    <div class="col-md-3">
+        <dynamic-form asp-action="/Home/Index" asp-model="@Model" 
+                      asp-create-button-text="Create Person"
+                      asp-create-button-classes="btn-success">
+            <override asp-property="BirthDate" 
+                      asp-label-classes="labelable"
+                      asp-input-classes="inputable"
+                      asp-validation-classes="validable"
+                      asp-input-path="~/Views/Shared/EditorTemplates/DateTime.cshtml">
+            </override>
+
+        </dynamic-form>
     </div>
 </div>
 @*Includes in the Scripts section under Shared/_Layout.cshtml the Jquery validation scripts*@
