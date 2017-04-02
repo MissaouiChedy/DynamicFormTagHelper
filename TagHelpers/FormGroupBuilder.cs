@@ -49,7 +49,7 @@ namespace DynamicFormTagHelper.TagHelpers
 
             string input = await buildInputHtml(property, overridingConfig);
 
-            string validation = await buildValidationMessageHtml(property);
+            string validation = await buildValidationMessageHtml(property, overridingConfig);
             return $@"<div class='form-group'>
                 {label}
                 {input}
