@@ -75,6 +75,9 @@ namespace DynamicFormTagHelper.TagHelpers
 
         public override async Task ProcessAsync(TagHelperContext context, TagHelperOutput output)
         {
+            FormGroupBuilder formGroupBuilder = new FormGroupBuilder(_htmlGenerator, ViewContext, 
+                _encoder, _htmlHelper);
+
             OverridingConfiguration overridingConfig = new OverridingConfiguration();
             context.Items.Add("OverridingConfig", overridingConfig);
             await output.GetChildContentAsync();
@@ -84,9 +87,10 @@ namespace DynamicFormTagHelper.TagHelpers
             {
                 if (prop.Metadata.PropertySetter != null)
                 {
-                    builder.Append(await FormGroupBuilder.GetFormGroup(prop, _htmlGenerator, ViewContext, _encoder, overridingConfig, _htmlHelper));
+                    builder.Append(await formGroupBuilder.GetFormGroup(prop, overridingConfig));
                 }
             }
+
             if (string.IsNullOrEmpty(CreateButtonText)) CreateButtonText = "Create";
             builder.Append($@"<div class=""form-group"">
                           <button type=""submit"" class=""{mergeClasses(CreateButtonClasses)}"">{CreateButtonText}</button>

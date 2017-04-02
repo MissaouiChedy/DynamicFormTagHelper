@@ -13,55 +13,59 @@ using Microsoft.AspNetCore.Html;
 
 namespace DynamicFormTagHelper.TagHelpers
 {
-    public static class FormGroupBuilder
+    public class FormGroupBuilder
     {
-        public static Task<string> GetFormGroup(ModelExplorer property, IHtmlGenerator generator, ViewContext viewContext, HtmlEncoder encoder, OverridingConfiguration config, IHtmlHelper html)
+        private readonly IHtmlGenerator _htmlGenerator;
+        private readonly ViewContext _viewContext;
+        private readonly HtmlEncoder _htmlEncoder;
+        private readonly IHtmlHelper _htmlHelper;
+
+        public FormGroupBuilder(IHtmlGenerator htmlGenerator, ViewContext viewContext, HtmlEncoder htmlEncoder,
+            IHtmlHelper htmlHelper)
+        {
+            _htmlGenerator = htmlGenerator;
+            _viewContext = viewContext;
+            _htmlEncoder = htmlEncoder;
+            _htmlHelper = htmlHelper;
+            (_htmlHelper as IViewContextAware).Contextualize(this._viewContext);
+        } 
+
+        public Task<string> GetFormGroup(ModelExplorer property, OverridingConfiguration overridingConfig)
         {
             if (property.ModelType.IsSimpleType())
             {
-                return _getFormGroupForSimpleProperty(property, generator, viewContext, encoder, config, html);
+                return _getFormGroupForSimpleProperty(property, overridingConfig);
             }
             else
             {
-                return _getFormGroupsForComplexProperty(property, generator, viewContext, encoder, config, html);
+                return _getFormGroupsForComplexProperty(property, overridingConfig);
             }
         }
         
-        private static async Task<string> _getFormGroupForSimpleProperty(ModelExplorer property, IHtmlGenerator generator, ViewContext viewContext, HtmlEncoder encoder, OverridingConfiguration config, IHtmlHelper html)
+        private async Task<string> _getFormGroupForSimpleProperty(ModelExplorer property, 
+            OverridingConfiguration overridingConfig)
         {
-            string label = await buildLabelHtml(generator, property, viewContext, encoder, config);
-            string input;
-            var inputConfig = config.GetByPropertyFullName(getFullPropertyName(property));
-            if (inputConfig != null)
-            {
-                input = renderTemplate(property, inputConfig.InputTemplatePath, viewContext, encoder, html);
-            }
-            else
-            {
-                input = await buildInputHtml(generator, property, viewContext, encoder);
-            }
+            string label = await buildLabelHtml(property, overridingConfig);
 
-            string validation = await buildValidationMessage(generator, property, viewContext, encoder);
+            string input = await buildInputHtml(property, overridingConfig);
+
+            string validation = await buildValidationMessageHtml(property);
             return $@"<div class='form-group'>
                 {label}
                 {input}
                 {validation}
 </div>";
         }
-        private static string renderTemplate(ModelExplorer property, string path, ViewContext viewContext, HtmlEncoder encoder, IHtmlHelper html)
-        {
-            (html as IViewContextAware).Contextualize(viewContext);
-            
-            return html.Editor(property.Metadata.PropertyName, path).RenderTag(encoder);
-        }
-        private static async Task<string> _getFormGroupsForComplexProperty(ModelExplorer property, IHtmlGenerator generator, ViewContext viewContext, HtmlEncoder encoder, OverridingConfiguration config, IHtmlHelper html)
+        
+        private async Task<string> _getFormGroupsForComplexProperty(ModelExplorer property, 
+            OverridingConfiguration config)
         {
             StringBuilder builder = new StringBuilder();
 
-            string label = await buildLabelHtml(generator, property, viewContext, encoder, config);
+            string label = await buildLabelHtml(property, config);
             foreach (var prop in property.Properties)
             {
-                builder.Append(await GetFormGroup(prop, generator, viewContext, encoder, config, html));
+                builder.Append(await GetFormGroup(prop, config));
             }
 
             return $@"<div class='form-group'>
@@ -72,60 +76,54 @@ namespace DynamicFormTagHelper.TagHelpers
 </div>";
         }
 
-        private static async Task<string> buildLabelHtml(IHtmlGenerator generator, ModelExplorer property, 
-            ViewContext viewContext, HtmlEncoder encoder, OverridingConfiguration config)
+        private async Task<string> buildLabelHtml(ModelExplorer property, OverridingConfiguration overridingConfig)
         {
-            TagHelper label = new LabelTagHelper(generator)
+            TagHelper label = new LabelTagHelper(_htmlGenerator)
             {
-                For = new ModelExpression(getFullPropertyName(property), property),
-                ViewContext = viewContext
+                For = new ModelExpression(property.GetFullName(), property),
+                ViewContext = _viewContext
             };
 
-            var propConfig = config.GetByPropertyFullName(getFullPropertyName(property));
-            return await GetGeneratedContent("label", TagMode.StartTagAndEndTag, label, encoder, new TagHelperAttributeList() { new TagHelperAttribute("class", propConfig?.LabelClasses)});
+            var propConfig = overridingConfig.GetByPropertyFullName(property.GetFullName());
+            return await GetGeneratedContentFromTagHelper("label", TagMode.StartTagAndEndTag, label,
+                new TagHelperAttributeList() { new TagHelperAttribute("class", propConfig?.LabelClasses)});
         }
 
-        private static async Task<string> buildInputHtml(IHtmlGenerator generator, ModelExplorer property, ViewContext viewContext, HtmlEncoder encoder)
+        private async Task<string> buildInputHtml(ModelExplorer property, OverridingConfiguration overridingConfig)
         {
-           TagHelper input = new InputTagHelper(generator)
-           {
-                For = new ModelExpression(getFullPropertyName(property), property),
-                ViewContext = viewContext
-            };
-
-            return await GetGeneratedContent("input",
-                TagMode.SelfClosing,
-                input,
-                attributes: new TagHelperAttributeList { new TagHelperAttribute("class", "form-control")
-                },
-                encoder: encoder
-                );
-        }
-        private static string getFullPropertyName(ModelExplorer property)
-        {
-            List<string> nameComponents = new List<String> { property.Metadata.PropertyName };
-
-            while (!string.IsNullOrEmpty(property.Container.Metadata.PropertyName))
+            PropertyOverridingConfiguration propertyConfig = overridingConfig.GetByPropertyFullName(property.GetFullName());
+            if (propertyConfig == null)
             {
-                nameComponents.Add(property.Container.Metadata.PropertyName);
-                property = property.Container;
+                TagHelper input = new InputTagHelper(_htmlGenerator)
+                {
+                    For = new ModelExpression(property.GetFullName(), property),
+                    ViewContext = _viewContext
+                };
+
+                return await GetGeneratedContentFromTagHelper("input",
+                    TagMode.SelfClosing,
+                    input,
+                    attributes: new TagHelperAttributeList { new TagHelperAttribute("class", "form-control")
+                    });
             }
-
-            nameComponents.Reverse();
-            return string.Join(".", nameComponents);
-        }
-        private static async Task<string> buildValidationMessage(IHtmlGenerator generator, ModelExplorer property, ViewContext viewContext, HtmlEncoder encoder)
-        {
-            TagHelper validationMessage = new ValidationMessageTagHelper(generator)
+            else
             {
-                For = new ModelExpression(getFullPropertyName(property), property),
-                ViewContext = viewContext
+                return renderInputTemplate(property, propertyConfig.InputTemplatePath);
+            }
+        }
+        
+        private async Task<string> buildValidationMessageHtml(ModelExplorer property, OverridingConfiguration overridingConfig)
+        {
+            TagHelper validationMessage = new ValidationMessageTagHelper(_htmlGenerator)
+            {
+                For = new ModelExpression(property.GetFullName(), property),
+                ViewContext = _viewContext
             };
-            return await GetGeneratedContent("span", TagMode.StartTagAndEndTag, validationMessage, encoder: encoder);
+            return await GetGeneratedContentFromTagHelper("span", TagMode.StartTagAndEndTag, validationMessage);
         }
 
-        private static async Task<string> GetGeneratedContent(string tagName, TagMode tagMode,
-            ITagHelper tagHelper, HtmlEncoder encoder, TagHelperAttributeList attributes = null )
+        private async Task<string> GetGeneratedContentFromTagHelper(string tagName, TagMode tagMode,
+            ITagHelper tagHelper, TagHelperAttributeList attributes = null )
         {
             if (attributes == null)
             {
@@ -144,11 +142,32 @@ namespace DynamicFormTagHelper.TagHelpers
             tagHelper.Init(context);
             await tagHelper.ProcessAsync(context, output);
 
-            return output.RenderTag(encoder);
+            return output.RenderTag(_htmlEncoder);
         }
 
-        #region Utility_Extension_Methods
-        private static bool IsSimpleType(this Type propertyType)
+        private string renderInputTemplate(ModelExplorer property, string path)
+        {
+            return _htmlHelper.Editor(property.Metadata.PropertyName, path).RenderTag(_htmlEncoder);
+        }
+    }
+
+    #region Utility_Extension_Methods
+    public static class Extensions
+    {
+        public static string GetFullName(this ModelExplorer property)
+        {
+            List<string> nameComponents = new List<String> { property.Metadata.PropertyName };
+
+            while (!string.IsNullOrEmpty(property.Container.Metadata.PropertyName))
+            {
+                nameComponents.Add(property.Container.Metadata.PropertyName);
+                property = property.Container;
+            }
+
+            nameComponents.Reverse();
+            return string.Join(".", nameComponents);
+        }
+        public static bool IsSimpleType(this Type propertyType)
         {
             Type[] simpleTypes = new Type[]
             {
@@ -165,7 +184,7 @@ namespace DynamicFormTagHelper.TagHelpers
                 return (!propertyType.IsArray && !propertyType.IsPointer && simpleTypes.Contains(propertyType));
             }
         }
-        private static string RenderTag(this IHtmlContent output, HtmlEncoder encoder)
+        public static string RenderTag(this IHtmlContent output, HtmlEncoder encoder)
         {
             using (var writer = new StringWriter())
             {
@@ -173,6 +192,6 @@ namespace DynamicFormTagHelper.TagHelpers
                 return writer.ToString();
             }
         }
-        #endregion
     }
+    #endregion
 }
