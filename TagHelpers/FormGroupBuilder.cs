@@ -84,9 +84,13 @@ namespace DynamicFormTagHelper.TagHelpers
                 ViewContext = _viewContext
             };
 
-            var propConfig = overridingConfig.GetByPropertyFullName(property.GetFullName());
-            return await GetGeneratedContentFromTagHelper("label", TagMode.StartTagAndEndTag, label,
-                new TagHelperAttributeList() { new TagHelperAttribute("class", propConfig?.LabelClasses)});
+            PropertyOverridingConfiguration propertyConfig = overridingConfig.GetByPropertyFullName(property.GetFullName());
+            return await GetGeneratedContentFromTagHelper(
+                "label", 
+                TagMode.StartTagAndEndTag, label,
+                new TagHelperAttributeList() {
+                    new TagHelperAttribute("class", propertyConfig?.LabelClasses)
+                });
         }
 
         private async Task<string> buildInputHtml(ModelExplorer property, OverridingConfiguration overridingConfig)
@@ -103,7 +107,7 @@ namespace DynamicFormTagHelper.TagHelpers
                 return await GetGeneratedContentFromTagHelper("input",
                     TagMode.SelfClosing,
                     input,
-                    attributes: new TagHelperAttributeList { new TagHelperAttribute("class", "form-control")
+                    attributes: new TagHelperAttributeList { new TagHelperAttribute("class", $"form-control {propertyConfig?.InputClasses}")
                     });
             }
             else
@@ -114,12 +118,17 @@ namespace DynamicFormTagHelper.TagHelpers
         
         private async Task<string> buildValidationMessageHtml(ModelExplorer property, OverridingConfiguration overridingConfig)
         {
+            PropertyOverridingConfiguration propertyConfig = overridingConfig.GetByPropertyFullName(property.GetFullName());
+
             TagHelper validationMessage = new ValidationMessageTagHelper(_htmlGenerator)
             {
                 For = new ModelExpression(property.GetFullName(), property),
                 ViewContext = _viewContext
             };
-            return await GetGeneratedContentFromTagHelper("span", TagMode.StartTagAndEndTag, validationMessage);
+            return await GetGeneratedContentFromTagHelper("span", 
+                TagMode.StartTagAndEndTag, 
+                validationMessage,
+                new TagHelperAttributeList() { new TagHelperAttribute("class", propertyConfig?.ValidationClasses)});
         }
 
         private async Task<string> GetGeneratedContentFromTagHelper(string tagName, TagMode tagMode,
