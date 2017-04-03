@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 
 namespace DynamicFormTagHelper.TagHelpers
 {
-    public class PropertyOverridingConfiguration
+    public class PropertyTweakingConfiguration
     {
         public ModelExpression Property { get; set; }
         public string InputTemplatePath { get; set; }
@@ -19,16 +19,16 @@ namespace DynamicFormTagHelper.TagHelpers
         public string ValidationClasses { get; set; }
     }
 
-    public class OverridingConfiguration
+    public class TweakingConfiguration
     {
-        private List<PropertyOverridingConfiguration> _propertyEntries = new List<PropertyOverridingConfiguration>();
+        private List<PropertyTweakingConfiguration> _propertyEntries = new List<PropertyTweakingConfiguration>();
 
-        public void Add(PropertyOverridingConfiguration propertyConfig)
+        public void Add(PropertyTweakingConfiguration propertyConfig)
         {
             _propertyEntries.Add(propertyConfig);
         }
 
-        public PropertyOverridingConfiguration GetByPropertyFullName(string fullName)
+        public PropertyTweakingConfiguration GetByPropertyFullName(string fullName)
         {
             var found = _propertyEntries.Where(e => e.Property.Name.Equals(fullName));
             if (found.Count() > 0)
@@ -42,7 +42,7 @@ namespace DynamicFormTagHelper.TagHelpers
         }
     }
 
-    [RestrictChildren("override")]
+    [RestrictChildren("tweak")]
     public class DynamicFormTagHelper : TagHelper
     {
         [HtmlAttributeName("asp-action")]
@@ -51,11 +51,11 @@ namespace DynamicFormTagHelper.TagHelpers
         [HtmlAttributeName("asp-model")]
         public ModelExpression Model { get; set; }
 
-        [HtmlAttributeName("asp-create-button-text")]
-        public string CreateButtonText { get; set; }
+        [HtmlAttributeName("asp-submit-button-text")]
+        public string SubmitButtonText { get; set; }
 
-        [HtmlAttributeName("asp-create-button-classes")]
-        public string CreateButtonClasses { get; set; }
+        [HtmlAttributeName("asp-submit-button-classes")]
+        public string SubmitButtonClasses { get; set; }
 
         [ViewContext]
         public ViewContext ViewContext { get; set; }
@@ -78,8 +78,8 @@ namespace DynamicFormTagHelper.TagHelpers
             FormGroupBuilder formGroupBuilder = new FormGroupBuilder(_htmlGenerator, ViewContext, 
                 _encoder, _htmlHelper);
 
-            OverridingConfiguration overridingConfig = new OverridingConfiguration();
-            context.Items.Add("OverridingConfig", overridingConfig);
+            TweakingConfiguration tweakingConfig = new TweakingConfiguration();
+            context.Items.Add("TweakingConfig", tweakingConfig);
             await output.GetChildContentAsync();
 
             StringBuilder builder = new StringBuilder();
@@ -87,13 +87,13 @@ namespace DynamicFormTagHelper.TagHelpers
             {
                 if (prop.Metadata.PropertySetter != null)
                 {
-                    builder.Append(await formGroupBuilder.GetFormGroup(prop, overridingConfig));
+                    builder.Append(await formGroupBuilder.GetFormGroup(prop, tweakingConfig));
                 }
             }
 
-            if (string.IsNullOrEmpty(CreateButtonText)) CreateButtonText = "Create";
+            if (string.IsNullOrEmpty(SubmitButtonText)) SubmitButtonText = "Create";
             builder.Append($@"<div class=""form-group"">
-                          <button type=""submit"" class=""{mergeClasses(CreateButtonClasses)}"">{CreateButtonText}</button>
+                          <button type=""submit"" class=""{mergeClasses(SubmitButtonClasses)}"">{SubmitButtonText}</button>
                     </div>");
 
             output.TagName = "form";
@@ -110,10 +110,10 @@ namespace DynamicFormTagHelper.TagHelpers
     }
 
     [HtmlTargetElement(ParentTag = "dynamic-form")]
-    public class OverrideTagHelper : TagHelper
+    public class TweakTagHelper : TagHelper
     {
         [HtmlAttributeName("asp-property")]
-        public ModelExpression OverridedProperty { get; set; }
+        public ModelExpression TweakedProperty { get; set; }
 
         [HtmlAttributeName("asp-input-path")]
         public string InputTemplatePath { get; set; }
@@ -129,15 +129,16 @@ namespace DynamicFormTagHelper.TagHelpers
         
         public override Task ProcessAsync(TagHelperContext context, TagHelperOutput output)
         {
-            OverridingConfiguration overridingConfig = context.Items["OverridingConfig"] as OverridingConfiguration;
-            overridingConfig.Add(new PropertyOverridingConfiguration
+            TweakingConfiguration overridingConfig = context.Items["TweakingConfig"] as TweakingConfiguration;
+            overridingConfig.Add(new PropertyTweakingConfiguration
             {
-                Property = OverridedProperty,
+                Property = TweakedProperty,
                 InputTemplatePath = InputTemplatePath,
                 LabelClasses = LabelClasses,
                 InputClasses = InputClasses,
                 ValidationClasses = ValidationClasses
             });
+            output.SuppressOutput();
             return Task.CompletedTask;
         }
     }

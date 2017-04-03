@@ -35,6 +35,10 @@ namespace DynamicFormTagHelper.Models
         [Display(Name = "Dog's Name")]
         public string Name { get; set; }
 
+        [DataType(DataType.Date)]
+        [Display(Name = "Birth date")]
+        public DateTime BirthDate { get; set; }
+
         public Leash DogLeash { get; set; }
     }
 

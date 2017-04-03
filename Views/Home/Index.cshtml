@@ -5,14 +5,22 @@
 <div class="row" style="margin-top: 2em;">
     <div class="col-md-3">
         <dynamic-form asp-action="/Home/Index" asp-model="@Model" 
-                      asp-create-button-text="Create Person"
-                      asp-create-button-classes="btn-success">
-            <override asp-property="BirthDate" 
-                      asp-label-classes="labelable"
-                      asp-input-classes="inputable"
-                      asp-validation-classes="validable"
+                      asp-submit-button-text="Create Person!"
+                      asp-submit-button-classes="btn-success">
+
+            <tweak asp-property="Name"
+                      asp-input-classes="custom-input-class">
+            </tweak>
+
+            <tweak asp-property="BirthDate" 
+                      asp-label-classes="custom-label-class"
                       asp-input-path="~/Views/Shared/EditorTemplates/DateTime.cshtml">
-            </override>
+            </tweak>
+
+            <tweak asp-property="OwnedDog.BirthDate"
+                      asp-input-path="~/Views/Shared/EditorTemplates/DateTime.cshtml">
+            </tweak>
+
 
         </dynamic-form>
     </div>

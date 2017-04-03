@@ -30,26 +30,26 @@ namespace DynamicFormTagHelper.TagHelpers
             (_htmlHelper as IViewContextAware).Contextualize(this._viewContext);
         } 
 
-        public Task<string> GetFormGroup(ModelExplorer property, OverridingConfiguration overridingConfig)
+        public Task<string> GetFormGroup(ModelExplorer property, TweakingConfiguration tweakingConfig)
         {
             if (property.ModelType.IsSimpleType())
             {
-                return _getFormGroupForSimpleProperty(property, overridingConfig);
+                return _getFormGroupForSimpleProperty(property, tweakingConfig);
             }
             else
             {
-                return _getFormGroupsForComplexProperty(property, overridingConfig);
+                return _getFormGroupsForComplexProperty(property, tweakingConfig);
             }
         }
         
         private async Task<string> _getFormGroupForSimpleProperty(ModelExplorer property, 
-            OverridingConfiguration overridingConfig)
+            TweakingConfiguration tweakingConfig)
         {
-            string label = await buildLabelHtml(property, overridingConfig);
+            string label = await buildLabelHtml(property, tweakingConfig);
 
-            string input = await buildInputHtml(property, overridingConfig);
+            string input = await buildInputHtml(property, tweakingConfig);
 
-            string validation = await buildValidationMessageHtml(property, overridingConfig);
+            string validation = await buildValidationMessageHtml(property, tweakingConfig);
             return $@"<div class='form-group'>
                 {label}
                 {input}
@@ -58,7 +58,7 @@ namespace DynamicFormTagHelper.TagHelpers
         }
         
         private async Task<string> _getFormGroupsForComplexProperty(ModelExplorer property, 
-            OverridingConfiguration config)
+            TweakingConfiguration config)
         {
             StringBuilder builder = new StringBuilder();
 
@@ -76,7 +76,7 @@ namespace DynamicFormTagHelper.TagHelpers
 </div>";
         }
 
-        private async Task<string> buildLabelHtml(ModelExplorer property, OverridingConfiguration overridingConfig)
+        private async Task<string> buildLabelHtml(ModelExplorer property, TweakingConfiguration tweakingConfig)
         {
             TagHelper label = new LabelTagHelper(_htmlGenerator)
             {
@@ -84,7 +84,8 @@ namespace DynamicFormTagHelper.TagHelpers
                 ViewContext = _viewContext
             };
 
-            PropertyOverridingConfiguration propertyConfig = overridingConfig.GetByPropertyFullName(property.GetFullName());
+            PropertyTweakingConfiguration propertyConfig = tweakingConfig
+                .GetByPropertyFullName(property.GetFullName());
             return await GetGeneratedContentFromTagHelper(
                 "label", 
                 TagMode.StartTagAndEndTag, label,
@@ -93,10 +94,10 @@ namespace DynamicFormTagHelper.TagHelpers
                 });
         }
 
-        private async Task<string> buildInputHtml(ModelExplorer property, OverridingConfiguration overridingConfig)
+        private async Task<string> buildInputHtml(ModelExplorer property, TweakingConfiguration tweakingConfig)
         {
-            PropertyOverridingConfiguration propertyConfig = overridingConfig.GetByPropertyFullName(property.GetFullName());
-            if (propertyConfig == null)
+            PropertyTweakingConfiguration propertyConfig = tweakingConfig.GetByPropertyFullName(property.GetFullName());
+            if (propertyConfig == null || string.IsNullOrEmpty(propertyConfig.InputTemplatePath))
             {
                 TagHelper input = new InputTagHelper(_htmlGenerator)
                 {
@@ -116,9 +117,9 @@ namespace DynamicFormTagHelper.TagHelpers
             }
         }
         
-        private async Task<string> buildValidationMessageHtml(ModelExplorer property, OverridingConfiguration overridingConfig)
+        private async Task<string> buildValidationMessageHtml(ModelExplorer property, TweakingConfiguration tweakingConfig)
         {
-            PropertyOverridingConfiguration propertyConfig = overridingConfig.GetByPropertyFullName(property.GetFullName());
+            PropertyTweakingConfiguration propertyConfig = tweakingConfig.GetByPropertyFullName(property.GetFullName());
 
             TagHelper validationMessage = new ValidationMessageTagHelper(_htmlGenerator)
             {

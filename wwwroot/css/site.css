@@ -54,3 +54,9 @@ span.field-validation-error span {
 .sub-form-group {
     padding-left: 1em;
 }
+.custom-input-class {
+    color: greenyellow;
+}
+.custom-label-class {
+    color: blueviolet;
+}
