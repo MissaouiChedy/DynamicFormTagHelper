@@ -71,10 +71,10 @@ namespace DynamicFormTagHelper.Models
 
         public List<SelectListItem> Items => new List<SelectListItem>()
         {
-            new SelectListItem {Value = "0", Text="Item 0", Selected = true},
-            new SelectListItem {Value = "1", Text="Item 1"},
-            new SelectListItem {Value = "2", Text="Item 2"},
-            new SelectListItem {Value = "3", Text="Item 3"},
+            new SelectListItem {Value = "0", Text="Glove", Selected = true},
+            new SelectListItem {Value = "1", Text="Umbrella"},
+            new SelectListItem {Value = "2", Text="Laptop"},
+            new SelectListItem {Value = "3", Text="Gamepad"},
         };
     }
 
