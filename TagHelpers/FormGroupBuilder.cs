@@ -33,30 +33,26 @@ namespace DynamicFormTagHelper.TagHelpers
 
         public Task<string> GetFormGroup(ModelExplorer property, TweakingConfiguration tweakingConfig)
         {
-            if (property.Metadata.PropertySetter == null)
+            if (!property.IsReadOnly())
             {
-                return Task.Run(() => "");
-            }
-
-            if (property.IsSelectList())
-            {
-                var itemSource = property.Container.Model.GetType().GetTypeInfo()
-                        .GetProperty(property.Metadata.PropertyName)
-                        .GetCustomAttribute<ItemsSourceAttribute>();
-
-                return _getFormGroupForSelectList(property, itemSource.GetItems(property.Container), 
-                    itemSource.ChoicesType, tweakingConfig);
-
-            }
-
-            else if (property.ModelType.IsSimpleType())
-            {
-
-                return _getFormGroupForSimpleProperty(property, tweakingConfig);
+                ItemsSourceAttribute itemSource;
+                if (property.HasValueFromSelectList(out itemSource))
+                {
+                    return _getFormGroupForSelectList(property, itemSource.GetItems(property.Container),
+                        itemSource.ChoicesType, tweakingConfig);
+                }
+                else if (property.ModelType.IsSimpleType())
+                {
+                    return _getFormGroupForSimpleProperty(property, tweakingConfig);
+                }
+                else
+                {
+                    return _getFormGroupsForComplexProperty(property, tweakingConfig);
+                }
             }
             else
             {
-                return _getFormGroupsForComplexProperty(property, tweakingConfig);
+                return Task.Run(() => String.Empty);
             }
         }
 
@@ -81,32 +77,6 @@ namespace DynamicFormTagHelper.TagHelpers
                 {select}
                 {validation}
 </div>";
-        }
-
-        private async Task<string> buildRadioInputsHtml(ModelExplorer property, IEnumerable<SelectListItem> items, 
-            TweakingConfiguration tweakingConfig)
-        {
-            StringBuilder inputs = new StringBuilder();
-            foreach (var item in items)
-            {
-                inputs.Append($"<br>{await buildInputHtml(property, tweakingConfig, "radio", item.Value)}&nbsp;<span>{item.Text}</span>");
-            }
-            return inputs.ToString();
-        }
-        
-        private async Task<string> buildSelectHtml(ModelExplorer property, IEnumerable<SelectListItem> items, TweakingConfiguration tweakingConfig)
-        {
-            TagHelper select = new SelectTagHelper(_htmlGenerator)
-            {
-                For = new ModelExpression(property.GetFullName(), property),
-                ViewContext = _viewContext,
-                Items = items
-            };
-
-            return await GetGeneratedContentFromTagHelper("select",
-                TagMode.StartTagAndEndTag,
-                select,
-                new TagHelperAttributeList { new TagHelperAttribute("class", "form-control") });
         }
 
         private async Task<string> _getFormGroupForSimpleProperty(ModelExplorer property,
@@ -142,7 +112,6 @@ namespace DynamicFormTagHelper.TagHelpers
                     </div>
 </div>";
         }
-
         private async Task<string> buildLabelHtml(ModelExplorer property, TweakingConfiguration tweakingConfig)
         {
             TagHelper label = new LabelTagHelper(_htmlGenerator)
@@ -161,7 +130,36 @@ namespace DynamicFormTagHelper.TagHelpers
                 });
         }
 
-        private async Task<string> buildInputHtml(ModelExplorer property, TweakingConfiguration tweakingConfig, string inputType="", string value="")
+        private async Task<string> buildRadioInputsHtml(ModelExplorer property, IEnumerable<SelectListItem> items, 
+            TweakingConfiguration tweakingConfig)
+        {
+            StringBuilder inputs = new StringBuilder();
+            foreach (var item in items)
+            {
+                inputs.Append($"<br>{await buildInputHtml(property, tweakingConfig, "radio", item.Value)}&nbsp;<span>{item.Text}</span>");
+            }
+            return inputs.ToString();
+        }
+        
+        private async Task<string> buildSelectHtml(ModelExplorer property, IEnumerable<SelectListItem> items, TweakingConfiguration tweakingConfig)
+        {
+            TagHelper select = new SelectTagHelper(_htmlGenerator)
+            {
+                For = new ModelExpression(property.GetFullName(), property),
+                ViewContext = _viewContext,
+                Items = items
+            };
+
+            return await GetGeneratedContentFromTagHelper("select",
+                TagMode.StartTagAndEndTag,
+                select,
+                new TagHelperAttributeList { new TagHelperAttribute("class", "form-control") });
+        }
+
+        
+
+        private async Task<string> buildInputHtml(ModelExplorer property, TweakingConfiguration tweakingConfig, 
+            string inputType="", string inputValue="")
         {
             PropertyTweakingConfiguration propertyConfig = tweakingConfig.GetByPropertyFullName(property.GetFullName());
             if (propertyConfig == null || string.IsNullOrEmpty(propertyConfig.InputTemplatePath))
@@ -176,12 +174,16 @@ namespace DynamicFormTagHelper.TagHelpers
                 if (!string.IsNullOrEmpty(inputType))
                 {
                     input.InputTypeName = inputType;
-                    input.Value = value;
+                    input.Value = inputValue;
+                    // Setting the Type attributes requires providing an initialized
+                    // AttributeList with the type attribute
                     attrs = new TagHelperAttributeList()
                     {
+                        new TagHelperAttribute("class", $"{propertyConfig?.InputClasses}"),
                         new TagHelperAttribute("type", inputType),
-                        new TagHelperAttribute("value", value)
+                        new TagHelperAttribute("value", inputValue)
                     };
+                    
                 }
                 
                 return await GetGeneratedContentFromTagHelper("input",
@@ -281,49 +283,18 @@ namespace DynamicFormTagHelper.TagHelpers
                 return writer.ToString();
             }
         }
-        public static bool IsSelectList(this ModelExplorer property)
+        public static bool HasValueFromSelectList(this ModelExplorer property, out ItemsSourceAttribute itemSource)
         {
-            var itemSource = property.Container.ModelType.GetTypeInfo()
+            itemSource = property.Container.ModelType.GetTypeInfo()
                     .GetProperty(property.Metadata.PropertyName)
                     .GetCustomAttribute<ItemsSourceAttribute>();
 
             return (itemSource != null);
         }
-    }
-    #endregion
-    [AttributeUsage(AttributeTargets.Property, Inherited = false)]
-    public class ItemsSourceAttribute : Attribute
-    {
-        public string ItemsProperty { get; set; }
-        public Type ItemsEnum { get; set; }
-        public ChoicesTypes ChoicesType { get; set; } = ChoicesTypes.DEFAULT;
-
-        public IEnumerable<SelectListItem> GetItems(ModelExplorer explorer)
+        public static bool IsReadOnly(this ModelExplorer property)
         {
-            if ((ItemsEnum != null) && (ItemsEnum.GetTypeInfo().IsEnum))
-            {
-                var items = new List<SelectListItem>();
-                MemberInfo[] enumItems = ItemsEnum.GetTypeInfo().GetMembers(BindingFlags.Public | BindingFlags.Static);
-                for (int i = 0; i < enumItems.Length; i++)
-                {
-                    items.Add(new SelectListItem() { Value = i.ToString(), Text=enumItems[i].Name});
-                }
-
-                return items;
-            }
-            else {
-                var properties = explorer.Properties.Where(p => p.Metadata.PropertyName.Equals(ItemsProperty));
-                if (properties.Count() == 1)
-                {
-                    return properties.First().Model as IEnumerable<SelectListItem>;
-                }
-                return new List<SelectListItem>();
-            }
+            return property.Metadata.PropertySetter == null;
         }
     }
-    public enum ChoicesTypes
-    {
-        DEFAULT,
-        RADIO
-    }
+    #endregion
 }
