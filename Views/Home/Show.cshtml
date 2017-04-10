@@ -5,7 +5,11 @@
 <div>
     <p><b>Id:</b> @Model.Id</p>
     <p><b>Name:</b> @Model.Name</p>
+    <p><b>Gender:</b> @Model.Gender</p>
     <p><b>Birth:</b> @Model.BirthDate</p>
     <p><b>BasketBall?:</b> @Model.IsBasketBallPlayerVM</p>
-    <p><b>Dog: </b> @(Model.OwnedDog.Id) &gt; @(Model.OwnedDog.Name) &gt; @(Model.OwnedDog.DogLeash.Name)</p>
+    <p><b>Item from drop down</b> @Model.SelectedItem</p>
+    <p><b>Item from radio group</b> @Model.SingleItem</p>
+    <p><b>Items from multi select</b> @(String.Join(", ", Model.SelectedItems))</p>
+    <p><b>Dog: </b> @(Model.OwnedDog.Id) &gt; @(Model.OwnedDog.Name) &gt; @(Model.OwnedDog.DogLeash.Name) &gt; @(Model.OwnedDog.DogLeash.LeashKind) </p>
 </div>

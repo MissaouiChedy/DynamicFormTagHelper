@@ -21,7 +21,9 @@ namespace DynamicFormTagHelper.TagHelpers
         private readonly HtmlEncoder _htmlEncoder;
         private readonly IHtmlHelper _htmlHelper;
 
-        public FormGroupBuilder(IHtmlGenerator htmlGenerator, ViewContext viewContext, HtmlEncoder htmlEncoder,
+        public FormGroupBuilder(IHtmlGenerator htmlGenerator, 
+            ViewContext viewContext, 
+            HtmlEncoder htmlEncoder,
             IHtmlHelper htmlHelper)
         {
             _htmlGenerator = htmlGenerator;
@@ -130,13 +132,14 @@ namespace DynamicFormTagHelper.TagHelpers
                 });
         }
 
-        private async Task<string> buildRadioInputsHtml(ModelExplorer property, IEnumerable<SelectListItem> items, 
+        private async Task<string> buildRadioInputsHtml(ModelExplorer property, 
+            IEnumerable<SelectListItem> items, 
             TweakingConfiguration tweakingConfig)
         {
             StringBuilder inputs = new StringBuilder();
             foreach (var item in items)
             {
-                inputs.Append($"<br>{await buildInputHtml(property, tweakingConfig, "radio", item.Value)}&nbsp;<span>{item.Text}</span>");
+                inputs.Append($"<br>{await buildInputHtml(property, tweakingConfig, "radio", item.Value, item.Selected)}&nbsp;<span>{item.Text}</span>");
             }
             return inputs.ToString();
         }
@@ -153,13 +156,13 @@ namespace DynamicFormTagHelper.TagHelpers
             return await GetGeneratedContentFromTagHelper("select",
                 TagMode.StartTagAndEndTag,
                 select,
-                new TagHelperAttributeList { new TagHelperAttribute("class", "form-control") });
+                new TagHelperAttributeList { new TagHelperAttribute("class", "form-control dropdown") });
         }
 
         
 
         private async Task<string> buildInputHtml(ModelExplorer property, TweakingConfiguration tweakingConfig, 
-            string inputType="", string inputValue="")
+            string inputType="", string inputValue="", bool radioChecked = false)
         {
             PropertyTweakingConfiguration propertyConfig = tweakingConfig.GetByPropertyFullName(property.GetFullName());
             if (propertyConfig == null || string.IsNullOrEmpty(propertyConfig.InputTemplatePath))
@@ -183,6 +186,10 @@ namespace DynamicFormTagHelper.TagHelpers
                         new TagHelperAttribute("type", inputType),
                         new TagHelperAttribute("value", inputValue)
                     };
+                    if (radioChecked)
+                    {
+                        attrs.Add(new TagHelperAttribute("checked", "checked"));
+                    }
                     
                 }
                 

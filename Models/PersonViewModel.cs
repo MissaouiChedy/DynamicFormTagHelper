@@ -23,23 +23,11 @@ namespace DynamicFormTagHelper.Models
         [Display(Name = "Person's full name")]
         public string Name { get; set; }
 
-        private Sex _gender;
-
         [Required]
-        [Display(Name= "Person's Gender")]
-        [ItemsSource(ItemsEnum = typeof(Sex), ChoicesType = ChoicesTypes.RADIO)]
-        public int Gender
-        {
-            get
-            {
-                return (int) _gender;
-            }
-            set
-            {
-                _gender = (Sex) value;
-            }
-        }
-
+        [Display(Name = "Person's Gender")]
+        [ItemsSource(ItemsEnum = typeof(Sex))]
+        public Sex Gender { get; set; }
+        
         [DataType(DataType.Date)]
         [Display(Name = "Birth date")]
         public DateTime? BirthDate { get; set; }
