@@ -10,7 +10,7 @@ namespace DynamicFormTagHelper.Models
     {
         MALE,
         FEMALE,
-        TRANSGENDER
+        OTHER
     }
 
     public class PersonViewModel
@@ -39,6 +39,7 @@ namespace DynamicFormTagHelper.Models
                 _gender = (Sex) value;
             }
         }
+
         [DataType(DataType.Date)]
         [Display(Name = "Birth date")]
         public DateTime? BirthDate { get; set; }
