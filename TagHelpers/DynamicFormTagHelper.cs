@@ -85,10 +85,7 @@ namespace DynamicFormTagHelper.TagHelpers
             StringBuilder builder = new StringBuilder();
             foreach (ModelExplorer prop in Model.ModelExplorer.Properties)
             {
-                if (prop.Metadata.PropertySetter != null)
-                {
-                    builder.Append(await formGroupBuilder.GetFormGroup(prop, tweakingConfig));
-                }
+                builder.Append(await formGroupBuilder.GetFormGroup(prop, tweakingConfig));
             }
 
             if (string.IsNullOrEmpty(SubmitButtonText)) SubmitButtonText = "Create";

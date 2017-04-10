@@ -10,6 +10,7 @@ using System.IO;
 using System.Text.Encodings.Web;
 using System.Linq;
 using Microsoft.AspNetCore.Html;
+using System.Reflection;
 
 namespace DynamicFormTagHelper.TagHelpers
 {
@@ -28,12 +29,29 @@ namespace DynamicFormTagHelper.TagHelpers
             _htmlEncoder = htmlEncoder;
             _htmlHelper = htmlHelper;
             (_htmlHelper as IViewContextAware).Contextualize(this._viewContext);
-        } 
+        }
 
         public Task<string> GetFormGroup(ModelExplorer property, TweakingConfiguration tweakingConfig)
         {
-            if (property.ModelType.IsSimpleType())
+            if (property.Metadata.PropertySetter == null)
             {
+                return Task.Run(() => "");
+            }
+
+            if (property.IsSelectList())
+            {
+                var itemSource = property.Container.Model.GetType().GetTypeInfo()
+                        .GetProperty(property.Metadata.PropertyName)
+                        .GetCustomAttribute<ItemsSourceAttribute>();
+
+                return _getFormGroupForSelectList(property, itemSource.GetItems(property.Container), 
+                    itemSource.ChoicesType, tweakingConfig);
+
+            }
+
+            else if (property.ModelType.IsSimpleType())
+            {
+
                 return _getFormGroupForSimpleProperty(property, tweakingConfig);
             }
             else
@@ -41,8 +59,57 @@ namespace DynamicFormTagHelper.TagHelpers
                 return _getFormGroupsForComplexProperty(property, tweakingConfig);
             }
         }
+
+        private async Task<string> _getFormGroupForSelectList(ModelExplorer property, IEnumerable<SelectListItem> items, 
+            ChoicesTypes choicesType, TweakingConfiguration tweakingConfig)
+        {
+            string label = await buildLabelHtml(property, tweakingConfig);
+
+            string select = "";
+            if (choicesType == ChoicesTypes.RADIO)
+            {
+                select = await buildRadioInputsHtml(property, items, tweakingConfig);
+            }
+            else
+            {
+                select = await buildSelectHtml(property, items, tweakingConfig);
+            }
+            
+            string validation = await buildValidationMessageHtml(property, tweakingConfig);
+            return $@"<div class='form-group'>
+                {label}
+                {select}
+                {validation}
+</div>";
+        }
+
+        private async Task<string> buildRadioInputsHtml(ModelExplorer property, IEnumerable<SelectListItem> items, 
+            TweakingConfiguration tweakingConfig)
+        {
+            StringBuilder inputs = new StringBuilder();
+            foreach (var item in items)
+            {
+                inputs.Append($"<br>{await buildInputHtml(property, tweakingConfig, "radio", item.Value)}&nbsp;<span>{item.Text}</span>");
+            }
+            return inputs.ToString();
+        }
         
-        private async Task<string> _getFormGroupForSimpleProperty(ModelExplorer property, 
+        private async Task<string> buildSelectHtml(ModelExplorer property, IEnumerable<SelectListItem> items, TweakingConfiguration tweakingConfig)
+        {
+            TagHelper select = new SelectTagHelper(_htmlGenerator)
+            {
+                For = new ModelExpression(property.GetFullName(), property),
+                ViewContext = _viewContext,
+                Items = items
+            };
+
+            return await GetGeneratedContentFromTagHelper("select",
+                TagMode.StartTagAndEndTag,
+                select,
+                new TagHelperAttributeList { new TagHelperAttribute("class", "form-control") });
+        }
+
+        private async Task<string> _getFormGroupForSimpleProperty(ModelExplorer property,
             TweakingConfiguration tweakingConfig)
         {
             string label = await buildLabelHtml(property, tweakingConfig);
@@ -56,8 +123,8 @@ namespace DynamicFormTagHelper.TagHelpers
                 {validation}
 </div>";
         }
-        
-        private async Task<string> _getFormGroupsForComplexProperty(ModelExplorer property, 
+
+        private async Task<string> _getFormGroupsForComplexProperty(ModelExplorer property,
             TweakingConfiguration config)
         {
             StringBuilder builder = new StringBuilder();
@@ -87,36 +154,48 @@ namespace DynamicFormTagHelper.TagHelpers
             PropertyTweakingConfiguration propertyConfig = tweakingConfig
                 .GetByPropertyFullName(property.GetFullName());
             return await GetGeneratedContentFromTagHelper(
-                "label", 
+                "label",
                 TagMode.StartTagAndEndTag, label,
                 new TagHelperAttributeList() {
                     new TagHelperAttribute("class", propertyConfig?.LabelClasses)
                 });
         }
 
-        private async Task<string> buildInputHtml(ModelExplorer property, TweakingConfiguration tweakingConfig)
+        private async Task<string> buildInputHtml(ModelExplorer property, TweakingConfiguration tweakingConfig, string inputType="", string value="")
         {
             PropertyTweakingConfiguration propertyConfig = tweakingConfig.GetByPropertyFullName(property.GetFullName());
             if (propertyConfig == null || string.IsNullOrEmpty(propertyConfig.InputTemplatePath))
             {
-                TagHelper input = new InputTagHelper(_htmlGenerator)
+                InputTagHelper input = new InputTagHelper(_htmlGenerator)
                 {
                     For = new ModelExpression(property.GetFullName(), property),
                     ViewContext = _viewContext
                 };
+                var attrs = new TagHelperAttributeList { new TagHelperAttribute("class", $"form-control {propertyConfig?.InputClasses}") };
 
+                if (!string.IsNullOrEmpty(inputType))
+                {
+                    input.InputTypeName = inputType;
+                    input.Value = value;
+                    attrs = new TagHelperAttributeList()
+                    {
+                        new TagHelperAttribute("type", inputType),
+                        new TagHelperAttribute("value", value)
+                    };
+                }
+                
                 return await GetGeneratedContentFromTagHelper("input",
                     TagMode.SelfClosing,
                     input,
-                    attributes: new TagHelperAttributeList { new TagHelperAttribute("class", $"form-control {propertyConfig?.InputClasses}")
-                    });
+                    attributes: attrs
+                    );
             }
             else
             {
                 return renderInputTemplate(property, propertyConfig.InputTemplatePath);
             }
         }
-        
+
         private async Task<string> buildValidationMessageHtml(ModelExplorer property, TweakingConfiguration tweakingConfig)
         {
             PropertyTweakingConfiguration propertyConfig = tweakingConfig.GetByPropertyFullName(property.GetFullName());
@@ -126,14 +205,14 @@ namespace DynamicFormTagHelper.TagHelpers
                 For = new ModelExpression(property.GetFullName(), property),
                 ViewContext = _viewContext
             };
-            return await GetGeneratedContentFromTagHelper("span", 
-                TagMode.StartTagAndEndTag, 
+            return await GetGeneratedContentFromTagHelper("span",
+                TagMode.StartTagAndEndTag,
                 validationMessage,
-                new TagHelperAttributeList() { new TagHelperAttribute("class", propertyConfig?.ValidationClasses)});
+                new TagHelperAttributeList() { new TagHelperAttribute("class", propertyConfig?.ValidationClasses) });
         }
 
         private async Task<string> GetGeneratedContentFromTagHelper(string tagName, TagMode tagMode,
-            ITagHelper tagHelper, TagHelperAttributeList attributes = null )
+            ITagHelper tagHelper, TagHelperAttributeList attributes = null)
         {
             if (attributes == null)
             {
@@ -202,6 +281,49 @@ namespace DynamicFormTagHelper.TagHelpers
                 return writer.ToString();
             }
         }
+        public static bool IsSelectList(this ModelExplorer property)
+        {
+            var itemSource = property.Container.ModelType.GetTypeInfo()
+                    .GetProperty(property.Metadata.PropertyName)
+                    .GetCustomAttribute<ItemsSourceAttribute>();
+
+            return (itemSource != null);
+        }
     }
     #endregion
+    [AttributeUsage(AttributeTargets.Property, Inherited = false)]
+    public class ItemsSourceAttribute : Attribute
+    {
+        public string ItemsProperty { get; set; }
+        public Type ItemsEnum { get; set; }
+        public ChoicesTypes ChoicesType { get; set; } = ChoicesTypes.DEFAULT;
+
+        public IEnumerable<SelectListItem> GetItems(ModelExplorer explorer)
+        {
+            if ((ItemsEnum != null) && (ItemsEnum.GetTypeInfo().IsEnum))
+            {
+                var items = new List<SelectListItem>();
+                MemberInfo[] enumItems = ItemsEnum.GetTypeInfo().GetMembers(BindingFlags.Public | BindingFlags.Static);
+                for (int i = 0; i < enumItems.Length; i++)
+                {
+                    items.Add(new SelectListItem() { Value = i.ToString(), Text=enumItems[i].Name});
+                }
+
+                return items;
+            }
+            else {
+                var properties = explorer.Properties.Where(p => p.Metadata.PropertyName.Equals(ItemsProperty));
+                if (properties.Count() == 1)
+                {
+                    return properties.First().Model as IEnumerable<SelectListItem>;
+                }
+                return new List<SelectListItem>();
+            }
+        }
+    }
+    public enum ChoicesTypes
+    {
+        DEFAULT,
+        RADIO
+    }
 }
