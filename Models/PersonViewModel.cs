@@ -22,8 +22,8 @@ namespace DynamicFormTagHelper.Models
         [Required]
         [Display(Name = "Person's full name")]
         public string Name { get; set; }
-        
-        public Sex _gender { get; set; }
+
+        private Sex _gender;
 
         [Required]
         [Display(Name= "Person's Gender")]
