@@ -21,7 +21,6 @@ namespace DynamicFormTagHelper.Models
 
         [Required]
         [Display(Name = "Person's full name")]
-
         [AutoComplete(SuggestionsProperty="SuggestedNames")]
         public string Name { get; set; }
 

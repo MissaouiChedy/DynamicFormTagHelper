@@ -292,11 +292,21 @@ namespace DynamicFormTagHelper.TagHelpers
         }
         public static bool HasValueFromSelectList(this ModelExplorer property, out ItemsSourceAttribute itemSource)
         {
-            itemSource = property.Container.ModelType.GetTypeInfo()
-                    .GetProperty(property.Metadata.PropertyName)
-                    .GetCustomAttribute<ItemsSourceAttribute>();
+            return property.HasAttribute<ItemsSourceAttribute>(out itemSource);
+        }
 
-            return (itemSource != null);
+        public static bool HasAutoComplete(this ModelExplorer property, out AutoCompleteAttribute autoComplete)
+        {
+            return property.HasAttribute<AutoCompleteAttribute>(out autoComplete);
+        }
+
+        public static bool HasAttribute<T>(this ModelExplorer property, out T attribute) where T : Attribute
+        {
+            attribute = property.Container.ModelType.GetTypeInfo()
+                    .GetProperty(property.Metadata.PropertyName)
+                    .GetCustomAttribute<T>();
+
+            return (attribute != null);
         }
         public static bool IsReadOnly(this ModelExplorer property)
         {
