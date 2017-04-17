@@ -96,6 +96,7 @@ namespace DynamicFormTagHelper.TagHelpers
             output.TagName = "form";
             output.Attributes.Add(new TagHelperAttribute("method", "post"));
             output.Attributes.Add(new TagHelperAttribute("action", TargetAction));
+            output.Attributes.Add(new TagHelperAttribute("autocomplete", "off"));
             output.Content.SetHtmlContent(builder.ToString());
         }
         private string mergeClasses(string userProvidedClasses)
