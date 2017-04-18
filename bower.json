@@ -8,6 +8,6 @@
     "jquery-validation-unobtrusive": "3.2.6",
     "eonasdan-bootstrap-datetimepicker": "latest",
     "bootstrap3-typeahead": "git://github.com/bassjobsen/Bootstrap-3-Typeahead.git#master",
-    "bloodhound": "latest"
+    "typeahead.js": "0.11.1"
   }
 }
