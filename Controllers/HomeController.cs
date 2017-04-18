@@ -1,5 +1,7 @@
 using DynamicFormTagHelper.Models;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace WebApplication.Controllers
 {
@@ -23,6 +25,22 @@ namespace WebApplication.Controllers
         public IActionResult Show(PersonViewModel model)
         {
             return View("Show", model);
+        }
+
+        [HttpGet]
+        public IActionResult DogNames(string typed)
+        {
+            var names = new List<string>()
+            {
+                "DaDawg",
+                "Dawg",
+                "Rex",
+                "Kablam",
+                "Fenton",
+                "Fenta"
+            };
+
+            return Json(names.Where(n => n.Contains(typed)).ToList());
         }
 
         public IActionResult About()

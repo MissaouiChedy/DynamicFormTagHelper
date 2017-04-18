@@ -190,9 +190,26 @@ namespace DynamicFormTagHelper.TagHelpers
                     {
                         attrs.Add(new TagHelperAttribute("checked", "checked"));
                     }
-                    
                 }
-                
+
+                AutoCompleteAttribute autoComplete;
+                if (property.HasAutoComplete(out autoComplete))
+                {
+                    //add a css class to the class attribute 
+                    var classAttr = attrs.Where(a => a.Name.Equals("class")).First();
+                    attrs.Remove(classAttr);
+                    attrs.Add(new TagHelperAttribute("class", $"{classAttr.Value} autocomplete"));
+                    if (!string.IsNullOrEmpty(autoComplete.SuggestionsProperty))
+                    {
+                        string suggestions = autoComplete.GetSuggestionsAsJson(property.Container);
+                        attrs.Add(new TagHelperAttribute("data-source-local", suggestions));
+                    }
+                    else if (!string.IsNullOrEmpty(autoComplete.SuggestionsEndpoint))
+                    {
+                        attrs.Add(new TagHelperAttribute("data-source-ajax", autoComplete.SuggestionsEndpoint));
+                    }
+                }
+
                 return await GetGeneratedContentFromTagHelper("input",
                     TagMode.SelfClosing,
                     input,

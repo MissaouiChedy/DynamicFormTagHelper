@@ -76,6 +76,7 @@ namespace DynamicFormTagHelper.Models
 
         [Required]
         [Display(Name = "Dog's Name")]
+        [AutoComplete(SuggestionsEndpoint = "/Home/DogNames")]
         public string Name { get; set; }
 
         [DataType(DataType.Date)]
