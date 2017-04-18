@@ -195,19 +195,8 @@ namespace DynamicFormTagHelper.TagHelpers
                 AutoCompleteAttribute autoComplete;
                 if (property.HasAutoComplete(out autoComplete))
                 {
-                    //add a css class to the class attribute 
-                    var classAttr = attrs.Where(a => a.Name.Equals("class")).First();
-                    attrs.Remove(classAttr);
-                    attrs.Add(new TagHelperAttribute("class", $"{classAttr.Value} autocomplete"));
-                    if (!string.IsNullOrEmpty(autoComplete.SuggestionsProperty))
-                    {
-                        string suggestions = autoComplete.GetSuggestionsAsJson(property.Container);
-                        attrs.Add(new TagHelperAttribute("data-source-local", suggestions));
-                    }
-                    else if (!string.IsNullOrEmpty(autoComplete.SuggestionsEndpoint))
-                    {
-                        attrs.Add(new TagHelperAttribute("data-source-ajax", autoComplete.SuggestionsEndpoint));
-                    }
+                    attrs.AddClass("autocomplete");
+                    attrs.Add(getAutoCompleteDataAttribute(autoComplete, property.Container));
                 }
 
                 return await GetGeneratedContentFromTagHelper("input",
@@ -222,6 +211,19 @@ namespace DynamicFormTagHelper.TagHelpers
             }
         }
 
+        private TagHelperAttribute getAutoCompleteDataAttribute(AutoCompleteAttribute autoComplete, ModelExplorer parentModel)
+        {
+            if (!string.IsNullOrEmpty(autoComplete.SuggestionsProperty))
+            {
+                string suggestions = autoComplete.GetSuggestionsAsJson(parentModel);
+                return new TagHelperAttribute("data-source-local", suggestions);
+            }
+            else if (!string.IsNullOrEmpty(autoComplete.SuggestionsEndpoint))
+            {
+                return new TagHelperAttribute("data-source-ajax", autoComplete.SuggestionsEndpoint);
+            }
+            return null;
+        }
         private async Task<string> buildValidationMessageHtml(ModelExplorer property, TweakingConfiguration tweakingConfig)
         {
             PropertyTweakingConfiguration propertyConfig = tweakingConfig.GetByPropertyFullName(property.GetFullName());
@@ -328,6 +330,17 @@ namespace DynamicFormTagHelper.TagHelpers
         public static bool IsReadOnly(this ModelExplorer property)
         {
             return property.Metadata.PropertySetter == null;
+        }
+
+        public static void AddClass(this TagHelperAttributeList attrList, string cssClass)
+        {
+            var attrs = attrList.Where(a => a.Name.Equals("class"));
+            if (attrs.Count() == 1)
+            {
+                TagHelperAttribute classAttr = attrs.First();
+                attrList.Remove(classAttr);
+                attrList.Add(new TagHelperAttribute("class", $"{classAttr.Value} autocomplete"));
+            }
         }
     }
     #endregion
