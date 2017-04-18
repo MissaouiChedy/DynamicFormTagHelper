@@ -25,22 +25,23 @@ textarea {
 
 /* buttons and links extension to use brackets: [ click me ] */
 .btn-bracketed::before {
-    display:inline-block;
+    display: inline-block;
     content: "[";
     padding-right: 0.5em;
 }
+
 .btn-bracketed::after {
-    display:inline-block;
+    display: inline-block;
     content: "]";
     padding-left: 0.5em;
 }
 
 /* Hide/rearrange for smaller screens */
 @media screen and (max-width: 767px) {
-  /* Hide captions */
-  .carousel-caption {
-    display: none
-  }
+    /* Hide captions */
+    .carousel-caption {
+        display: none
+    }
 }
 
 span.field-validation-error span {
@@ -54,9 +55,43 @@ span.field-validation-error span {
 .sub-form-group {
     padding-left: 1em;
 }
+
 .custom-input-class {
     color: greenyellow;
 }
+
 .custom-label-class {
     color: blueviolet;
 }
+
+/* Style for the autocomplete */
+
+.twitter-typeahead {
+    display: inline-block;
+    width: 100%;
+}
+
+.tt-menu {
+    border-color: black;
+    border-width: 0.5px;
+    border-style: solid;
+    border-radius: 4px;
+    background-color: white;
+    padding-top: 0.1em;
+    padding-bottom: 0.1em;
+    width: 100%;
+}
+
+.tt-menu .tt-suggestion {
+    padding-left: 0.1em;
+    padding-left: 0.25em;
+}
+
+.tt-menu .tt-suggestion:hover {
+    cursor: pointer;
+}
+
+.tt-cursor {
+        background-color: lightgrey;
+}
+

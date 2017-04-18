@@ -39,8 +39,8 @@ namespace WebApplication.Controllers
                 "Fenton",
                 "Fenta"
             };
-
-            return Json(names.Where(n => n.Contains(typed)).ToList());
+            var result = names.Where(n => n.ToUpper().Contains(typed.ToUpper())).ToList();
+            return Json(result);
         }
 
         public IActionResult About()
