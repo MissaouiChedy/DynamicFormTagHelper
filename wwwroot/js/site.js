@@ -1,11 +1,4 @@
-$(document).ready(function () {
-    $('.datetimepicker').each(function (index, elem) {
-        $(elem).datetimepicker({
-            format: "YYYY-MM-DD[T]HH:mm:ss.SSS[Z]",
-            showClear: true,
-            showTodayButton: true
-        });
-    });
+function initializeAutoComplete() {
     // initialize auto complete fields
     $('input.autocomplete').each(function (index, elem) {
         var suggestionEngine = null;
@@ -17,7 +10,7 @@ $(document).ready(function () {
                 queryTokenizer: Bloodhound.tokenizers.whitespace,
                 local: $(elem).data('source-local')
             });
-            
+
         }
         else if ($(elem).data('source-ajax')) {
             // initialize from remote source
@@ -40,9 +33,21 @@ $(document).ready(function () {
                 highlight: true,
                 minLength: 1
             }, {
-                source: suggestionEngine.ttAdapter(),
-                autoSelect: true
-            });
+                    source: suggestionEngine.ttAdapter(),
+                    autoSelect: true
+                });
         }
     });
+}
+
+$(document).ready(function () {
+    $('.datetimepicker').each(function (index, elem) {
+        $(elem).datetimepicker({
+            format: "YYYY-MM-DD[T]HH:mm:ss.SSS[Z]",
+            showClear: true,
+            showTodayButton: true
+        });
+    });
+
+    initializeAutoComplete();
 });
